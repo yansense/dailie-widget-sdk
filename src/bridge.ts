@@ -1,4 +1,9 @@
-import type { HostMessage, WidgetMessage, WidgetMessageType } from "./types";
+import type {
+  HostMessage,
+  InvokeMethodPayload,
+  WidgetMessage,
+  WidgetMessageType,
+} from "./types";
 
 const PENDING_REQUESTS = new Map<
   string,
@@ -37,11 +42,8 @@ export function sendMessage<T>(
       payload,
     };
 
-    // In a real scenario, we might want to target a specific origin
-    // For now, '*' is acceptable as the iframe is sandboxed
     window.parent.postMessage(message, "*");
 
-    // Timeout after 10 seconds
     setTimeout(() => {
       if (PENDING_REQUESTS.has(id)) {
         PENDING_REQUESTS.delete(id);
@@ -49,4 +51,49 @@ export function sendMessage<T>(
       }
     }, 10000);
   });
+}
+
+function createRecursiveProxy(path: string): any {
+  // The proxy target is a dummy function so it can be invoked
+  const dummy = () => {};
+  
+  return new Proxy(dummy, {
+    get: (_target, prop) => {
+      if (typeof prop === "string") {
+        if (prop === "then") return undefined; // Avoid Promise confusion
+        return createRecursiveProxy(path ? `${path}.${prop}` : prop);
+      }
+      return undefined;
+    },
+    apply: (_target, _thisArg, args) => {
+      // When invoked, we assume the LAST segment of the path is the method name,
+      // and the rest is the module path.
+      
+      const lastDotIndex = path.lastIndexOf(".");
+      if (lastDotIndex === -1) {
+         throw new Error("Cannot invoke root module directly");
+      }
+      
+      const module = path.substring(0, lastDotIndex);
+      const method = path.substring(lastDotIndex + 1);
+      
+      return sendMessage<any>("INVOKE_METHOD", {
+        module,
+        method,
+        args,
+      } as InvokeMethodPayload);
+    }
+  });
+}
+
+export function createModuleProxy<T extends object>(moduleName: string): T {
+   return new Proxy({} as T, {
+     get: (_target, prop) => {
+       if (typeof prop === "string") {
+         if (prop === "then") return undefined;
+         return createRecursiveProxy(`${moduleName}.${prop}`);
+       }
+       return undefined;
+     }
+   });
 }
