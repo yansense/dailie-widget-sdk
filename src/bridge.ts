@@ -20,10 +20,12 @@ if (typeof window !== "undefined") {
     if (request) {
       if (data.type === "RESPONSE") {
         request.resolve(data.payload);
+        PENDING_REQUESTS.delete(data.id);
       } else if (data.type === "ERROR") {
         request.reject(new Error(data.error || "Unknown host error"));
+        PENDING_REQUESTS.delete(data.id);
       }
-      PENDING_REQUESTS.delete(data.id);
+      // Ignore other message types (like the echoed request itself)
     }
   });
 }
