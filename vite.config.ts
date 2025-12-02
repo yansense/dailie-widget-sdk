@@ -13,7 +13,7 @@ export default defineConfig({
       formats: ["es"], // 推荐输出 ES Module
     },
     rollupOptions: {
-      external: ["react", "react-dom"],
+      external: ["react", "react-dom", "react/jsx-runtime"],
       output: {
         globals: {
           react: "React",
@@ -25,6 +25,6 @@ export default defineConfig({
   },
   define: {
     // 防止某些库报错
-    "process.env": {},
+    "process.env.NODE_ENV": '"production"',
   },
 });
