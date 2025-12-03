@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { sendMessage } from "./bridge";
+import { sendMessage, onEvent } from "./bridge";
 import { storage } from "./modules/storage";
 import type { WidgetContext } from "./types";
 
@@ -9,10 +9,20 @@ export function useWidgetContext() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Initial fetch
     sendMessage<WidgetContext>("GET_CONTEXT")
       .then(setContext)
       .catch(setError)
       .finally(() => setLoading(false));
+
+    // Listen for updates
+    const unsubscribe = onEvent<WidgetContext>("context-update", (newContext) => {
+      setContext(newContext);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return { context, loading, error };

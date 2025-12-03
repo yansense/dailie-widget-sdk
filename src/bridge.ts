@@ -10,11 +10,24 @@ const PENDING_REQUESTS = new Map<
   { resolve: (value: any) => void; reject: (reason: any) => void }
 >();
 
+const EVENT_LISTENERS = new Map<string, Set<(payload: any) => void>>();
+
 // Listen for messages from the host
 if (typeof window !== "undefined") {
   window.addEventListener("message", (event) => {
     const data = event.data as HostMessage;
     if (!data || !data.id) return;
+
+    // Handle Events
+    if (data.type === "EVENT") {
+       // For events, the id is the event name
+       const eventName = data.id;
+       const listeners = EVENT_LISTENERS.get(eventName);
+       if (listeners) {
+         listeners.forEach(callback => callback(data.payload));
+       }
+       return;
+    }
 
     const request = PENDING_REQUESTS.get(data.id);
     if (request) {
@@ -28,6 +41,20 @@ if (typeof window !== "undefined") {
       // Ignore other message types (like the echoed request itself)
     }
   });
+}
+
+export function onEvent<T = any>(eventName: string, callback: (payload: T) => void) {
+  if (!EVENT_LISTENERS.has(eventName)) {
+    EVENT_LISTENERS.set(eventName, new Set());
+  }
+  EVENT_LISTENERS.get(eventName)!.add(callback);
+
+  return () => {
+    const listeners = EVENT_LISTENERS.get(eventName);
+    if (listeners) {
+      listeners.delete(callback);
+    }
+  };
 }
 
 export function sendMessage<T>(
