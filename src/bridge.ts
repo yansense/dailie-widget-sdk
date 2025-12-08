@@ -20,11 +20,15 @@ if (typeof window !== "undefined") {
 
     // Handle Events
     if (data.type === "EVENT") {
+       console.log("[SDK] Received EVENT:", data);
        // For events, the id is the event name
        const eventName = data.id;
        const listeners = EVENT_LISTENERS.get(eventName);
        if (listeners) {
+         console.log(`[SDK] Dispatching event '${eventName}' to ${listeners.size} listeners`);
          listeners.forEach(callback => callback(data.payload));
+       } else {
+         console.warn(`[SDK] No listeners for event '${eventName}'`);
        }
        return;
     }

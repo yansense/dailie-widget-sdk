@@ -18,6 +18,7 @@ export function useWidgetContext() {
 
     // Listen for updates
     const unsubscribe = onEvent<WidgetContext>("context-update", (newContext) => {
+      console.log("[SDK] useWidgetContext received update:", newContext);
       setContext(newContext);
     });
 
@@ -41,6 +42,7 @@ export function useConfig<T = any>(): T {
 
   useEffect(() => {
     const unsubscribe = onEvent<T>("config-update", (newConfig) => {
+      console.log("[SDK] useConfig received update:", newConfig);
       setConfig(newConfig);
     });
     return () => unsubscribe();
