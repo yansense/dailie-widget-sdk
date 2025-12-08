@@ -6,7 +6,19 @@ import { ui, type UiAPI } from "./modules/ui";
 export * from "./types";
 export * from "./hooks";
 export * from "./context";
-export { sendMessage } from "./bridge";
+export * from "./bridge";
+
+export interface WidgetDefinition<P = any> {
+  component: React.ComponentType<P>;
+  config?: {
+    props?: object; // JSON Schema
+    panel?: object; // VDOM JSON
+  };
+}
+
+export function defineWidget<P = any>(options: WidgetDefinition<P>): WidgetDefinition<P> {
+  return options;
+}
 
 // Export modules
 export const widget = {
