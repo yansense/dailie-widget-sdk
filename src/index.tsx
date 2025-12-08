@@ -5,6 +5,7 @@ import { ui, type UiAPI } from "./modules/ui";
 
 export * from "./types";
 export * from "./hooks";
+export * from "./context";
 export { sendMessage } from "./bridge";
 
 // Export modules

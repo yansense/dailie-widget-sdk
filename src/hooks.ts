@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { sendMessage, onEvent } from "./bridge";
-import { storage } from "./modules/storage";
+import { useEffect, useState, useMemo } from "react";
+import { sendMessage, onEvent, createModuleProxy } from "./bridge";
+import { storage, type StorageAPI } from "./modules/storage";
 import type { WidgetContext } from "./types";
+import { useWidgetId } from "./context";
 
 export function useWidgetContext() {
   const [context, setContext] = useState<WidgetContext | null>(null);
@@ -32,9 +33,22 @@ export function useStorage<T>(key: string, initialValue?: T) {
   const [value, setValue] = useState<T | undefined>(initialValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  const widgetId = useWidgetId();
+  
+  // Create a scoped storage instance if widgetId is present, otherwise use global
+  const storageInstance = useMemo(() => {
+      if (widgetId) {
+          // We need to import createModuleProxy dynamically or from bridge
+          // But since we are in hooks.ts, we can import it.
+          // However, we need to cast it to StorageAPI
+          return createModuleProxy<StorageAPI>("storage", widgetId);
+      }
+      return storage;
+  }, [widgetId]);
 
   useEffect(() => {
-    storage.local.getItem<T>(key)
+    storageInstance.local.getItem<T>(key)
       .then((val) => {
         if (val !== undefined) {
           setValue(val);
@@ -42,11 +56,11 @@ export function useStorage<T>(key: string, initialValue?: T) {
       })
       .catch(setError)
       .finally(() => setLoading(false));
-  }, [key]);
+  }, [key, storageInstance]);
 
   const setStorageValue = async (newValue: T) => {
     try {
-      await storage.local.setItem(key, newValue);
+      await storageInstance.local.setItem(key, newValue);
       setValue(newValue);
     } catch (err) {
       setError(err as Error);
