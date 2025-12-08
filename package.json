@@ -1,7 +1,7 @@
 {
   "name": "dailie-widget-sdk",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "type": "module",
   "main": "./dist/widget.es.js",

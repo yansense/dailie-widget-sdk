@@ -68,7 +68,7 @@ export function sendMessage<T>(
 
     const message: WidgetMessage = {
       id,
-      widgetId,
+      widgetId: widgetId || (window as any).__DAILIE_WIDGET_ID__,
       type,
       payload,
     };
