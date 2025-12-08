@@ -5,6 +5,7 @@ export type WidgetMessageType =
 
 export interface WidgetMessage<T = any> {
   id: string;
+  widgetId?: string;
   type: WidgetMessageType;
   payload?: T;
 }
@@ -23,6 +24,7 @@ export interface InvokeMethodPayload {
 }
 
 export interface WidgetContext {
+  widgetId?: string;
   theme: "light" | "dark";
   gridSize: string; // e.g. "1x1", "2x2"
   dimensions: {

@@ -59,7 +59,8 @@ export function onEvent<T = any>(eventName: string, callback: (payload: T) => vo
 
 export function sendMessage<T>(
   type: WidgetMessageType,
-  payload?: any
+  payload?: any,
+  widgetId?: string
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = Math.random().toString(36).substring(7);
@@ -67,6 +68,7 @@ export function sendMessage<T>(
 
     const message: WidgetMessage = {
       id,
+      widgetId,
       type,
       payload,
     };
@@ -82,7 +84,7 @@ export function sendMessage<T>(
   });
 }
 
-function createRecursiveProxy(path: string): any {
+function createRecursiveProxy(path: string, widgetId?: string): any {
   // The proxy target is a dummy function so it can be invoked
   const dummy = () => {};
   
@@ -90,7 +92,7 @@ function createRecursiveProxy(path: string): any {
     get: (_target, prop) => {
       if (typeof prop === "string") {
         if (prop === "then") return undefined; // Avoid Promise confusion
-        return createRecursiveProxy(path ? `${path}.${prop}` : prop);
+        return createRecursiveProxy(path ? `${path}.${prop}` : prop, widgetId);
       }
       return undefined;
     },
@@ -110,17 +112,17 @@ function createRecursiveProxy(path: string): any {
         module,
         method,
         args,
-      } as InvokeMethodPayload);
+      } as InvokeMethodPayload, widgetId);
     }
   });
 }
 
-export function createModuleProxy<T extends object>(moduleName: string): T {
+export function createModuleProxy<T extends object>(moduleName: string, widgetId?: string): T {
    return new Proxy({} as T, {
      get: (_target, prop) => {
        if (typeof prop === "string") {
          if (prop === "then") return undefined;
-         return createRecursiveProxy(`${moduleName}.${prop}`);
+         return createRecursiveProxy(`${moduleName}.${prop}`, widgetId);
        }
        return undefined;
      }
