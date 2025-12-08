@@ -35,4 +35,5 @@ export interface WidgetContext {
     id: string;
     name: string;
   };
+  config?: any;
 }

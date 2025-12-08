@@ -29,6 +29,26 @@ export function useWidgetContext() {
   return { context, loading, error };
 }
 
+export function useConfig<T = any>(): T {
+  const { context } = useWidgetContext();
+  const [config, setConfig] = useState<T>({} as T);
+
+  useEffect(() => {
+    if (context?.config) {
+      setConfig(context.config);
+    }
+  }, [context?.config]);
+
+  useEffect(() => {
+    const unsubscribe = onEvent<T>("config-update", (newConfig) => {
+      setConfig(newConfig);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return config;
+}
+
 export function useStorage<T>(key: string, initialValue?: T) {
   const [value, setValue] = useState<T | undefined>(initialValue);
   const [loading, setLoading] = useState(true);
