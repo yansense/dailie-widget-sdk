@@ -34,7 +34,7 @@ export function useStorage<T>(key: string, initialValue?: T) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    storage.getItem<T>(key)
+    storage.local.getItem<T>(key)
       .then((val) => {
         if (val !== undefined) {
           setValue(val);
@@ -46,7 +46,7 @@ export function useStorage<T>(key: string, initialValue?: T) {
 
   const setStorageValue = async (newValue: T) => {
     try {
-      await storage.setItem(key, newValue);
+      await storage.local.setItem(key, newValue);
       setValue(newValue);
     } catch (err) {
       setError(err as Error);
