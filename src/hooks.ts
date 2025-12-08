@@ -4,8 +4,17 @@ import { storage, type StorageAPI } from "./modules/storage";
 import type { WidgetContext } from "./types";
 import { useWidgetId } from "./context";
 
+// Default context to prevent null crashes
+const DEFAULT_CONTEXT: WidgetContext = {
+  widgetId: "",
+  gridSize: "2x2",
+  theme: "light",
+  dimensions: { width: 240, height: 240 },
+  config: {}
+};
+
 export function useWidgetContext() {
-  const [context, setContext] = useState<WidgetContext | null>(null);
+  const [context, setContext] = useState<WidgetContext>(DEFAULT_CONTEXT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
@@ -14,7 +23,9 @@ export function useWidgetContext() {
   useEffect(() => {
     // Initial fetch - pass widgetId to identify source
     sendMessage<WidgetContext>("GET_CONTEXT", undefined, widgetId)
-      .then(setContext)
+      .then((ctx) => {
+        if (ctx) setContext(ctx);
+      })
       .catch(setError)
       .finally(() => setLoading(false));
 
