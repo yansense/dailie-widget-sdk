@@ -8,16 +8,23 @@ export function useWidgetContext() {
   const [context, setContext] = useState<WidgetContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  const widgetId = useWidgetId();
 
   useEffect(() => {
-    // Initial fetch
-    sendMessage<WidgetContext>("GET_CONTEXT")
+    // Initial fetch - pass widgetId to identify source
+    sendMessage<WidgetContext>("GET_CONTEXT", undefined, widgetId)
       .then(setContext)
       .catch(setError)
       .finally(() => setLoading(false));
 
     // Listen for updates
     const unsubscribe = onEvent<WidgetContext>("context-update", (newContext) => {
+      // Filter updates by widget ID if we know our ID
+      if (widgetId && newContext.widgetId && newContext.widgetId !== widgetId) {
+         return;
+      }
+      
       console.log("[SDK] useWidgetContext received update:", newContext);
       setContext(newContext);
     });
@@ -25,7 +32,7 @@ export function useWidgetContext() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [widgetId]);
 
   return { context, loading, error };
 }
