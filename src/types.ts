@@ -13,6 +13,7 @@ export interface WidgetMessage<T = any> {
 export interface HostMessage<T = any> {
   id: string;
   type: "RESPONSE" | "ERROR" | "EVENT";
+  widgetId?: string;
   payload?: T;
   error?: string;
 }

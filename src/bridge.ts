@@ -5,58 +5,106 @@ import type {
   WidgetMessageType,
 } from "./types";
 
-const PENDING_REQUESTS = new Map<
-  string,
-  { resolve: (value: any) => void; reject: (reason: any) => void }
->();
-
-const EVENT_LISTENERS = new Map<string, Set<(payload: any) => void>>();
-
-// Listen for messages from the host
-if (typeof window !== "undefined") {
-  window.addEventListener("message", (event) => {
-    const data = event.data as HostMessage;
-    if (!data || !data.id) return;
-
-    // Handle Events
-    if (data.type === "EVENT") {
-       console.log("[SDK] Received EVENT:", data);
-       // For events, the id is the event name
-       const eventName = data.id;
-       const listeners = EVENT_LISTENERS.get(eventName);
-       if (listeners) {
-         console.log(`[SDK] Dispatching event '${eventName}' to ${listeners.size} listeners`);
-         listeners.forEach(callback => callback(data.payload));
-       } else {
-         console.warn(`[SDK] No listeners for event '${eventName}'`);
-       }
-       return;
-    }
-
-    const request = PENDING_REQUESTS.get(data.id);
-    if (request) {
-      if (data.type === "RESPONSE") {
-        request.resolve(data.payload);
-        PENDING_REQUESTS.delete(data.id);
-      } else if (data.type === "ERROR") {
-        request.reject(new Error(data.error || "Unknown host error"));
-        PENDING_REQUESTS.delete(data.id);
-      }
-      // Ignore other message types (like the echoed request itself)
-    }
-  });
+interface EventListener {
+  callback: (payload: any) => void;
+  widgetId?: string;
 }
 
-export function onEvent<T = any>(eventName: string, callback: (payload: T) => void) {
-  if (!EVENT_LISTENERS.has(eventName)) {
-    EVENT_LISTENERS.set(eventName, new Set());
+// Global Singleton Interface
+interface BridgeSingleton {
+  pendingRequests: Map<string, { resolve: (value: any) => void; reject: (reason: any) => void }>;
+  eventListeners: Map<string, Set<EventListener>>;
+  initialized: boolean;
+  init: () => void;
+}
+
+// Get or Create Singleton
+const getBridge = (): BridgeSingleton => {
+    if (typeof window === "undefined") {
+        return {
+            pendingRequests: new Map(),
+            eventListeners: new Map(),
+            initialized: false,
+            init: () => {}
+        };
+    }
+
+    const key = "__DAILIE_BRIDGE_V2__";
+    if (!(window as any)[key]) {
+        const bridge: BridgeSingleton = {
+            pendingRequests: new Map(),
+            eventListeners: new Map(),
+            initialized: false,
+            init: () => {
+                if (bridge.initialized) {
+                    console.log("[SDK-Singleton] Already initialized, skipping listener attachment.");
+                    return;
+                }
+                console.log("[SDK-Singleton] Initializing Global Message Listener");
+                window.addEventListener("message", (event) => {
+                    const data = event.data as HostMessage;
+                    if (!data || !data.id) return;
+                
+                    // Handle Events
+                    if (data.type === "EVENT") {
+                       console.log(`[SDK-Singleton] Received EVENT [${data.id}] for widget [${data.widgetId || 'global'}]. Disptaching to ${bridge.eventListeners.get(data.id)?.size || 0} listeners.`);
+                       const eventName = data.id;
+                       const listeners = bridge.eventListeners.get(eventName);
+                       
+                       if (listeners) {
+                         listeners.forEach(listener => {
+                            if (listener.widgetId && data.widgetId && listener.widgetId !== data.widgetId) {
+                               console.log(`[SDK-Singleton] Skipping listener for widget [${listener.widgetId}] vs msg [${data.widgetId}] - mismatch`);
+                               return; 
+                            }
+                            console.log(`[SDK-Singleton] Invoking listener for widget [${listener.widgetId || 'global'}]`);
+                            try {
+                                listener.callback(data.payload);
+                            } catch (e) {
+                                console.error("[SDK-Singleton] Listener callback failed:", e);
+                            }
+                         });
+                       }
+                       return;
+                    }
+                
+                    const request = bridge.pendingRequests.get(data.id);
+                    if (request) {
+                      if (data.type === "RESPONSE") {
+                        request.resolve(data.payload);
+                        bridge.pendingRequests.delete(data.id);
+                      } else if (data.type === "ERROR") {
+                        request.reject(new Error(data.error || "Unknown host error"));
+                        bridge.pendingRequests.delete(data.id);
+                      }
+                    }
+                });
+                bridge.initialized = true;
+            }
+        };
+        (window as any)[key] = bridge;
+    }
+    return (window as any)[key];
+};
+
+const bridge = getBridge();
+// Initialize the global listener immediately if in browser
+if (typeof window !== "undefined") {
+    bridge.init();
+}
+
+export function onEvent<T = any>(eventName: string, callback: (payload: T) => void, widgetId?: string) {
+  if (!bridge.eventListeners.has(eventName)) {
+    bridge.eventListeners.set(eventName, new Set());
   }
-  EVENT_LISTENERS.get(eventName)!.add(callback);
+  
+  const listener: EventListener = { callback, widgetId };
+  bridge.eventListeners.get(eventName)!.add(listener);
 
   return () => {
-    const listeners = EVENT_LISTENERS.get(eventName);
+    const listeners = bridge.eventListeners.get(eventName);
     if (listeners) {
-      listeners.delete(callback);
+      listeners.delete(listener);
     }
   };
 }
@@ -68,7 +116,7 @@ export function sendMessage<T>(
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = Math.random().toString(36).substring(7);
-    PENDING_REQUESTS.set(id, { resolve, reject });
+    bridge.pendingRequests.set(id, { resolve, reject });
 
     const message: WidgetMessage = {
       id,
@@ -77,11 +125,12 @@ export function sendMessage<T>(
       payload,
     };
 
+    console.log("[SDK-Bridge] Sending Message:", message);
     window.parent.postMessage(message, "*");
 
     setTimeout(() => {
-      if (PENDING_REQUESTS.has(id)) {
-        PENDING_REQUESTS.delete(id);
+      if (bridge.pendingRequests.has(id)) {
+        bridge.pendingRequests.delete(id);
         reject(new Error("Request timed out"));
       }
     }, 10000);

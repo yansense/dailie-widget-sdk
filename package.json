@@ -1,13 +1,14 @@
 {
   "name": "dailie-widget-sdk",
   "private": true,
-  "version": "0.0.11",
+  "version": "2.0.0-alpha.1",
+  "description": "SDK for building Dailie widgets",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/widget.es.js",
+  "main": "./dist/sdk.es.js",
   "exports": {
     ".": {
-      "import": "./dist/widget.es.js",
+      "import": "./dist/sdk.es.js",
       "types": "./dist/index.d.ts"
     }
   },

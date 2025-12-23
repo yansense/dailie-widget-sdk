@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { sendMessage, onEvent, createModuleProxy } from "./bridge";
 import { storage, type StorageAPI } from "./modules/storage";
 import type { WidgetContext } from "./types";
-import { useWidgetId } from "./context";
+import { useWidgetId, useWidgetScope } from "./context";
 
 // Default context to prevent null crashes
 const DEFAULT_CONTEXT: WidgetContext = {
@@ -14,43 +14,65 @@ const DEFAULT_CONTEXT: WidgetContext = {
 };
 
 export function useWidgetContext() {
-  const [context, setContext] = useState<WidgetContext>(DEFAULT_CONTEXT);
+  // 1. Try to get context from Scope Provider (V2 injection)
+  const scoped = useWidgetScope();
+  
+  // Internal state for V1 fallback or standalone mode
+  const [internalContext, setInternalContext] = useState<WidgetContext>(DEFAULT_CONTEXT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const widgetId = useWidgetId();
+  const widgetId = (scoped.widgetId || internalContext.widgetId) as string;
 
+  // If we have scoped context with data, we use it directly!
+  // BUT we need to make sure the type matches WidgetContext.
+  // The 'scoped' object from defineWidget includes EVERYTHING.
+  
+  const isV2 = !!scoped.widgetId;
+
+  // Effect for V1 / Fallback only
   useEffect(() => {
+    if (isV2) {
+        setLoading(false);
+        return;
+    }
+
     // Initial fetch - pass widgetId to identify source
     sendMessage<WidgetContext>("GET_CONTEXT", undefined, widgetId)
       .then((ctx) => {
-        if (ctx) setContext(ctx);
+        if (ctx) setInternalContext(ctx);
       })
       .catch(setError)
       .finally(() => setLoading(false));
 
     // Listen for updates
     const unsubscribe = onEvent<WidgetContext>("context-update", (newContext) => {
-      // Filter updates by widget ID if we know our ID
-      if (widgetId && newContext.widgetId && newContext.widgetId !== widgetId) {
-         return;
-      }
-      
-      console.log("[SDK] useWidgetContext received update:", newContext);
-      setContext(newContext);
-    });
+      console.log("[SDK] useWidgetContext (V1) received update:", newContext);
+      setInternalContext(newContext);
+    }, widgetId);
 
     return () => {
       unsubscribe();
     };
-  }, [widgetId]);
+  }, [widgetId, isV2]);
 
-  return { context, loading, error };
+  // Merge: Prefer scoped (Provider) > internal > default
+  // Note: scoped might be Partial, so we merge carefully
+  const activeContext: WidgetContext = isV2 ? {
+      widgetId: scoped.widgetId || "",
+      gridSize: scoped.gridSize || "2x2",
+      theme: (scoped.theme as any) || "light",
+      dimensions: scoped.dimensions || { width: 300, height: 300 },
+      config: scoped.config || {},
+  } : internalContext;
+
+  return { context: activeContext, loading, error };
 }
 
 export function useConfig<T = any>(): T {
   const { context } = useWidgetContext();
   const [config, setConfig] = useState<T>({} as T);
+  const widgetId = useWidgetId();
 
   useEffect(() => {
     if (context?.config) {
@@ -62,9 +84,9 @@ export function useConfig<T = any>(): T {
     const unsubscribe = onEvent<T>("config-update", (newConfig) => {
       console.log("[SDK] useConfig received update:", newConfig);
       setConfig(newConfig);
-    });
+    }, widgetId);
     return () => unsubscribe();
-  }, []);
+  }, [widgetId]);
 
   return config;
 }
@@ -74,22 +96,23 @@ export function useStorage<T>(key: string, initialValue?: T) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const widgetId = useWidgetId();
+  const { widgetId, storage: scopedStorage } = useWidgetScope();
   
   // Create a scoped storage instance if widgetId is present, otherwise use global
   const storageInstance = useMemo(() => {
+      // Prioritize scoped storage from context (bundled SDK V2)
+      if (scopedStorage) return scopedStorage;
+      
       if (widgetId) {
-          // We need to import createModuleProxy dynamically or from bridge
-          // But since we are in hooks.ts, we can import it.
-          // However, we need to cast it to StorageAPI
+          // Dynamic import fallback or create proxy
           return createModuleProxy<StorageAPI>("storage", widgetId);
       }
       return storage;
-  }, [widgetId]);
+  }, [widgetId, scopedStorage]);
 
   useEffect(() => {
     storageInstance.local.getItem<T>(key)
-      .then((val) => {
+      .then((val: T | undefined) => {
         if (val !== undefined) {
           setValue(val);
         }

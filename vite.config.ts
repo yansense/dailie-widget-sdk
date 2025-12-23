@@ -9,8 +9,8 @@ export default defineConfig({
     // 1. 库模式打包
     lib: {
       entry: path.resolve(__dirname, "src/index.tsx"),
-      name: "WidgetEntry", // 全局变量名 (如果是 UMD/IIFE)
-      fileName: (format) => `widget.${format}.js`,
+      name: "DailieWidgetSDK", // Library name
+      fileName: (format) => `sdk.${format}.js`,
       formats: ["es"], // 推荐输出 ES Module
     },
     rollupOptions: {
