@@ -8,12 +8,13 @@
   "exports": {
     ".": {
       "import": "./dist/widget.es.js",
-      "types": "./src/index.tsx"
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "watch": "vite build --watch",
     "preview": "vite preview",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",
