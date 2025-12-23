@@ -37,4 +37,5 @@ export interface WidgetContext {
     name: string;
   };
   config?: any;
+  widgetStyle?: 'classic' | 'immersive'; // Widget background style
 }

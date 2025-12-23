@@ -13,6 +13,7 @@ export interface ScopeContextValue {
   theme?: 'light' | 'dark';
   dimensions?: { width: number; height: number };
   config?: Record<string, any>;
+  widgetStyle?: 'classic' | 'immersive';
 }
 
 export const WidgetScopeContext = createContext<ScopeContextValue>({});

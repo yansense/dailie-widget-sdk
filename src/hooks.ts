@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import React from "react";
 import { sendMessage, onEvent, createModuleProxy } from "./bridge";
 import { storage, type StorageAPI } from "./modules/storage";
 import type { WidgetContext } from "./types";
@@ -57,13 +58,28 @@ export function useWidgetContext() {
 
   // Merge: Prefer scoped (Provider) > internal > default
   // Note: scoped might be Partial, so we merge carefully
-  const activeContext: WidgetContext = isV2 ? {
-      widgetId: scoped.widgetId || "",
-      gridSize: scoped.gridSize || "2x2",
-      theme: (scoped.theme as any) || "light",
-      dimensions: scoped.dimensions || { width: 300, height: 300 },
-      config: scoped.config || {},
-  } : internalContext;
+  const activeContext: WidgetContext = React.useMemo(() => {
+    if (isV2) {
+      return {
+        widgetId: scoped.widgetId || "",
+        gridSize: scoped.gridSize || "2x2",
+        theme: (scoped.theme as any) || "light",
+        dimensions: scoped.dimensions || { width: 300, height: 300 },
+        config: scoped.config || {},
+        widgetStyle: scoped.widgetStyle,
+      };
+    }
+    return internalContext;
+  }, [
+    isV2,
+    scoped.widgetId,
+    scoped.gridSize,
+    scoped.theme,
+    scoped.dimensions,
+    scoped.config,
+    scoped.widgetStyle,
+    internalContext
+  ]);
 
   return { context: activeContext, loading, error };
 }
