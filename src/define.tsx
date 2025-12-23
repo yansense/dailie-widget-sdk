@@ -49,10 +49,8 @@ export function defineWidget(def: WidgetDefinition) {
           if (!context.widgetId) return;
           // Listen for context updates from Host (SandboxV2)
           return onEvent('context-update', (payload: any) => {
-            console.log("[SDK] defineWidget: Context Update Payload:", payload);
             setContext(prev => {
               const next = { ...prev, ...payload };
-              console.log("[SDK] defineWidget: New Context State:", next);
               return next;
             });
           }, context.widgetId);

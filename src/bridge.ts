@@ -37,27 +37,22 @@ const getBridge = (): BridgeSingleton => {
             initialized: false,
             init: () => {
                 if (bridge.initialized) {
-                    console.log("[SDK-Singleton] Already initialized, skipping listener attachment.");
                     return;
                 }
-                console.log("[SDK-Singleton] Initializing Global Message Listener");
                 window.addEventListener("message", (event) => {
                     const data = event.data as HostMessage;
                     if (!data || !data.id) return;
                 
                     // Handle Events
                     if (data.type === "EVENT") {
-                       console.log(`[SDK-Singleton] Received EVENT [${data.id}] for widget [${data.widgetId || 'global'}]. Disptaching to ${bridge.eventListeners.get(data.id)?.size || 0} listeners.`);
                        const eventName = data.id;
                        const listeners = bridge.eventListeners.get(eventName);
                        
                        if (listeners) {
                          listeners.forEach(listener => {
                             if (listener.widgetId && data.widgetId && listener.widgetId !== data.widgetId) {
-                               console.log(`[SDK-Singleton] Skipping listener for widget [${listener.widgetId}] vs msg [${data.widgetId}] - mismatch`);
                                return; 
                             }
-                            console.log(`[SDK-Singleton] Invoking listener for widget [${listener.widgetId || 'global'}]`);
                             try {
                                 listener.callback(data.payload);
                             } catch (e) {
@@ -125,7 +120,6 @@ export function sendMessage<T>(
       payload,
     };
 
-    console.log("[SDK-Bridge] Sending Message:", message);
     window.parent.postMessage(message, "*");
 
     setTimeout(() => {
