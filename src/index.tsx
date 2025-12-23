@@ -35,3 +35,13 @@ export function scope(widgetId: string) {
     storage: createModuleProxy<StorageAPI>("storage", widgetId),
   };
 }
+
+// Test utility to verify SDK bundling
+export function getSDKInfo() {
+  return {
+    version: "0.0.11-bundled-test",
+    bundled: true,
+    timestamp: new Date().toISOString(),
+    message: "🎯 This SDK is BUNDLED into the widget!"
+  };
+}
