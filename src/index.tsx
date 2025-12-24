@@ -8,6 +8,7 @@ export * from "./context";
 export * from "./bridge";
 // Export new Definition API
 export * from "./define";
+export * from "./utils";
 
 // Legacy exports for backward compatibility (optional, or remove if strictly breaking)
 // We are removing the old defineWidget to enforce V2 usage for this version.
@@ -63,7 +64,7 @@ export function __internal_scope(widgetId: string) {
 // Test utility to verify SDK bundling
 export function getSDKInfo() {
   return {
-    version: "2.0.0-alpha.4",
+    version: "2.0.0-alpha.5",
     bundled: true,
     timestamp: new Date().toISOString(),
     message: "🎯 This SDK is BUNDLED into the widget (V2)!"
