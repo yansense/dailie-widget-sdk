@@ -51,8 +51,9 @@ export { storage, ui };
 // It is better if `scope` returns the full thing if possible, but simpler if injector merges.
 // Let's stick to injector merge.
 
-// Actually, I'll update the comment in `scope` to be clear.
-export function scope(widgetId: string) {
+// Internal helper for Host (injector) to create a scoped SDK instance.
+// @internal - Not for public usage by widget developers.
+export function __internal_scope(widgetId: string) {
   return {
     ui: createModuleProxy<UiAPI>("ui", widgetId),
     storage: createModuleProxy<StorageAPI>("storage", widgetId),
@@ -62,7 +63,7 @@ export function scope(widgetId: string) {
 // Test utility to verify SDK bundling
 export function getSDKInfo() {
   return {
-    version: "2.0.0-alpha.1",
+    version: "2.0.0-alpha.3",
     bundled: true,
     timestamp: new Date().toISOString(),
     message: "🎯 This SDK is BUNDLED into the widget (V2)!"

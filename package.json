@@ -1,7 +1,7 @@
 {
   "name": "dailie-widget-sdk",
   "private": true,
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0-alpha.3",
   "description": "SDK for building Dailie widgets",
   "license": "MIT",
   "type": "module",
