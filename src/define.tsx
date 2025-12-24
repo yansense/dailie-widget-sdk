@@ -13,8 +13,7 @@ export interface WidgetDefinition {
     keywords?: string[];
   };
   config?: {
-    props?: Record<string, any>;
-    panel?: Record<string, any>;
+    schema: any; // Zod schema
   };
   setup: (context: WidgetContext) => () => React.ReactNode;
 }
