@@ -87,7 +87,6 @@ export function defineWidget(def: WidgetDefinition) {
 
         // Memoize individual context fields to prevent unnecessary Provider updates
         const providerValue = React.useMemo(() => {
-          console.log('[defineWidget] Creating providerValue with gridSize:', context.gridSize);
           return {
             widgetId: context.widgetId,
             theme: context.theme,
