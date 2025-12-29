@@ -166,10 +166,17 @@ export function useStorage<T>(
   }, [key, storageInstance, parser]);
 
   const setStorageValue = async (newValue: T) => {
+    // 1. Optimistic Update: Update UI immediately
+    const previousValue = value;
+    setValue(newValue);
+
     try {
+      // 2. Persist to storage (Async Bridge)
       await storageInstance.local.setItem(key, newValue);
-      setValue(newValue);
     } catch (err) {
+      console.error(`[SDK] Storage write failed for "${key}":`, err);
+      // 3. Rollback on error
+      setValue(previousValue);
       setError(err as Error);
       throw err;
     }

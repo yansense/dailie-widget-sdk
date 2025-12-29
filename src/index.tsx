@@ -64,7 +64,7 @@ export function __internal_scope(widgetId: string) {
 // Test utility to verify SDK bundling
 export function getSDKInfo() {
   return {
-    version: "2.0.0-alpha.6",
+    version: "2.0.0-alpha.7",
     bundled: true,
     timestamp: new Date().toISOString(),
     message: "🎯 This SDK is BUNDLED into the widget (V2)!"
