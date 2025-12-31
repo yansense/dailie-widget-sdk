@@ -2,6 +2,7 @@ import type { WidgetContext } from "./types";
 import { createModuleProxy, onEvent } from "./bridge";
 import type { UiAPI } from "./modules/ui";
 import type { StorageAPI } from "./modules/storage";
+import type { IoAPI } from "./modules/io";
 import React from "react";
 
 export interface WidgetDefinition {
@@ -14,6 +15,10 @@ export interface WidgetDefinition {
   };
   config?: {
     schema: any; // Zod schema
+  };
+  io?: {
+    input?: any; // Zod schema
+    output?: any; // Zod schema
   };
   setup: (context: WidgetContext) => () => React.ReactNode;
 }
@@ -31,11 +36,13 @@ export function defineWidget(def: WidgetDefinition) {
       // Create proxies once
       const ui = createModuleProxy<UiAPI>("ui", initialContext.widgetId);
       const storage = createModuleProxy<StorageAPI>("storage", initialContext.widgetId);
+      const io = createModuleProxy<IoAPI>("io", initialContext.widgetId);
 
       const scopedContext = {
         ...initialContext,
         ui,
         storage,
+        io,
       };
 
       const RenderComponent = originalSetup(scopedContext);
@@ -85,6 +92,10 @@ export function defineWidget(def: WidgetDefinition) {
           JSON.stringify(context.config) // Simple deep comparison via JSON
         ]);
 
+        const inputs = React.useMemo(() => context.inputs, [
+          JSON.stringify(context.inputs)
+        ]);
+
         // Memoize individual context fields to prevent unnecessary Provider updates
         const providerValue = React.useMemo(() => {
           return {
@@ -93,9 +104,11 @@ export function defineWidget(def: WidgetDefinition) {
             gridSize: context.gridSize,
             dimensions,
             config,
+            inputs,
             widgetStyle: context.widgetStyle,
             ui,
-            storage
+            storage,
+            io
           };
         }, [
           context.widgetId,
@@ -103,9 +116,11 @@ export function defineWidget(def: WidgetDefinition) {
           context.gridSize,
           dimensions,
           config,
+          inputs,
           context.widgetStyle,
           ui,
-          storage
+          storage,
+          io
         ]); // Depend on individual fields, not entire context object
 
         return (

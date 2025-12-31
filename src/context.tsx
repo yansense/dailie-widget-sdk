@@ -2,17 +2,21 @@ import React, { createContext, useContext } from "react";
 import type { UiAPI } from "./modules/ui";
 import type { StorageAPI } from "./modules/storage";
 
+import type { IoAPI } from "./modules/io";
+
 // Extend this with WidgetContext fields so consumers can access them
 // We can import WidgetContext or just define them here.
 export interface ScopeContextValue {
   widgetId?: string;
   ui?: UiAPI;
   storage?: StorageAPI;
+  io?: IoAPI;
   // Context fields
   gridSize?: string;
   theme?: 'light' | 'dark';
   dimensions?: { width: number; height: number };
   config?: Record<string, any>;
+  inputs?: any;
   widgetStyle?: 'classic' | 'immersive';
 }
 

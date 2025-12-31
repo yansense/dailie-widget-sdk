@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import React from "react";
 import { sendMessage, onEvent, createModuleProxy } from "./bridge";
 import { storage, type StorageAPI } from "./modules/storage";
+import { io, type IoAPI } from "./modules/io";
 import type { WidgetContext } from "./types";
 import { useWidgetId, useWidgetScope } from "./context";
 
@@ -12,6 +13,7 @@ const DEFAULT_CONTEXT: WidgetContext = {
   theme: "light",
   dimensions: { width: 240, height: 240 },
   config: {},
+  inputs: {},
 };
 
 export function useWidgetContext() {
@@ -71,6 +73,7 @@ export function useWidgetContext() {
         theme: (scoped.theme as any) || "light",
         dimensions: scoped.dimensions || { width: 300, height: 300 },
         config: scoped.config || {},
+        inputs: scoped.inputs,
         widgetStyle: scoped.widgetStyle,
       };
     }
@@ -82,6 +85,7 @@ export function useWidgetContext() {
     scoped.theme,
     scoped.dimensions,
     scoped.config,
+    scoped.inputs,
     scoped.widgetStyle,
     internalContext,
   ]);
@@ -114,6 +118,33 @@ export function useConfig<T = any>(): T {
   }, [widgetId]);
 
   return config;
+}
+
+export function useIO<Input = any, Output = any>() {
+  const { context } = useWidgetContext();
+  const { widgetId, io: scopedIO } = useWidgetScope();
+  
+  const inputs = (context?.inputs || {}) as Input;
+  
+  // Create a scoped IO instance if widgetId is present, otherwise use global
+  const ioInstance = useMemo(() => {
+    // Prioritize scoped IO from context (bundled SDK V2)
+    if (scopedIO) return scopedIO;
+
+    if (widgetId) {
+      return createModuleProxy<IoAPI>("io", widgetId);
+    }
+    return io;
+  }, [widgetId, scopedIO]);
+
+  const setOutput = async (data: Output) => {
+    await ioInstance.setOutput(data);
+  };
+
+  return {
+    inputs,
+    setOutput
+  };
 }
 
 // Minimal interface compatible with Zod schema

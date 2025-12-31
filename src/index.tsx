@@ -1,6 +1,7 @@
 import { createModuleProxy } from "./bridge";
 import { storage, type StorageAPI } from "./modules/storage";
 import { ui, type UiAPI } from "./modules/ui";
+import { io, type IoAPI } from "./modules/io";
 
 export * from "./types";
 export * from "./hooks";
@@ -18,10 +19,11 @@ export * from "./utils";
 export const widget = {
   storage,
   ui,
+  io,
 };
 
 // Re-export specific modules if needed
-export { storage, ui };
+export { storage, ui, io };
 
 // Need to bind the rest of the SDK to the scoped object
 // However, 'this' context or circular dependency might be tricky with "export *".
@@ -58,13 +60,14 @@ export function __internal_scope(widgetId: string) {
   return {
     ui: createModuleProxy<UiAPI>("ui", widgetId),
     storage: createModuleProxy<StorageAPI>("storage", widgetId),
+    io: createModuleProxy<IoAPI>("io", widgetId),
   };
 }
 
 // Test utility to verify SDK bundling
 export function getSDKInfo() {
   return {
-    version: "2.0.0-alpha.7",
+    version: "2.0.0-alpha.8",
     bundled: true,
     timestamp: new Date().toISOString(),
     message: "🎯 This SDK is BUNDLED into the widget (V2)!"

@@ -37,5 +37,6 @@ export interface WidgetContext {
     name: string;
   };
   config?: any;
+  inputs?: any; // Widget inputs from host
   widgetStyle?: 'classic' | 'immersive'; // Widget background style
 }
